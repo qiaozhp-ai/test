@@ -1,0 +1,198 @@
+/* 布局：游戏画面占满主区域，下面一条窄栏放标题和按键说明。整页只有一套暗色外观，和游戏画面连成一片。 */
+:root {
+  --void: #05070c; /* 和游戏背景同色 */
+  --rock: #141a26;
+  --ink: #c9d3e2;
+  --dim: #6b7790;
+  --amber: #ffb35c; /* 灯笼的光 */
+  --moss: #9fd08a; /* 角色的光 */
+  --font-pixel: "Silkscreen", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-ui: system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-inline: 16px;
+  padding-block: 12px;
+  box-sizing: border-box;
+}
+
+.stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.stage canvas {
+  display: block;
+  image-rendering: pixelated;
+  box-shadow: 0 0 0 1px var(--rock);
+}
+
+.bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+  max-width: 960px;
+  width: 100%;
+  margin-inline: auto;
+}
+
+.title {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+.name {
+  font-size: 18px;
+  letter-spacing: 0.3em;
+  color: var(--amber);
+}
+
+.eggs {
+  font-family: var(--font-pixel);
+  font-variant-numeric: tabular-nums;
+  color: var(--dim);
+}
+
+.keys {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  color: var(--dim);
+}
+
+kbd {
+  display: inline-block;
+  min-width: 1.4em;
+  padding: 1px 5px;
+  margin-right: 3px;
+  border: 1px solid var(--rock);
+  border-bottom-width: 2px;
+  border-radius: 3px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  text-align: center;
+  color: var(--ink);
+}
+
+button {
+  font: inherit;
+  color: var(--ink);
+  background: var(--rock);
+  border: 1px solid #222a3a;
+  border-radius: 4px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--dim);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+.toast {
+  position: absolute;
+  top: 12%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 16px;
+  background: rgba(5, 7, 12, 0.85);
+  border: 1px solid var(--amber);
+  color: var(--amber);
+  border-radius: 4px;
+  letter-spacing: 0.1em;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* 触屏按钮：只在没有鼠标的设备上显示 */
+.touch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .keys span {
+    display: none;
+  }
+
+  .touch {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: none;
+  }
+
+  .touch .pad {
+    display: flex;
+    gap: 12px;
+  }
+
+  .touch button {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    font-size: 20px;
+    touch-action: none;
+  }
+
+  .touch button.down {
+    background: #222a3a;
+    border-color: var(--moss);
+  }
+
+  .touch .jump {
+    width: 76px;
+    height: 76px;
+    color: var(--moss);
+  }
+}
+
+/* 调参面板放在右上角 */
+.lil-gui.root {
+  --background-color: #0b0f18;
+  --widget-color: #1a2131;
+  --hover-color: #222a3a;
+  --focus-color: #2a3446;
+  --number-color: var(--moss);
+  --font-family: var(--font-ui);
+  top: 12px !important;
+  right: 12px !important;
+  max-height: calc(100% - 24px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    transition: none;
+  }
+}
