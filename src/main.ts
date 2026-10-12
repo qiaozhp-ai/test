@@ -1,10 +1,11 @@
 import Phaser from "phaser";
 import { GameScene, type Snapshot } from "./GameScene";
+import { HudScene } from "./view/HudScene";
 import { createDebugPanel } from "./debug";
 import { touchState } from "./input";
 import { DEFAULT_PARAMS } from "./params";
 import { PARAMS_KEY, load } from "./storage";
-import { ROOM_PX_H, ROOM_PX_W } from "./world";
+import { SCALE, SCREEN_H, SCREEN_W } from "./view/screen";
 import "./style.css";
 
 declare global {
@@ -54,16 +55,16 @@ function buildPage() {
 }
 
 function fitCanvas(game: Phaser.Game) {
-  // 能整数倍放大就整数倍，像素不会糊；窗口太小才用小数倍
+  // 画布内部是 SCREEN_W x SCREEN_H（美术像素的 SCALE 倍）。
+  // 缩放时让每个美术像素占整数个 CSS 像素，像素画就不会粗细不均。
   const stage = document.getElementById("stage")!;
   const resize = () => {
-    const availW = stage.clientWidth;
-    const availH = stage.clientHeight;
-    const fit = Math.min(availW / ROOM_PX_W, availH / ROOM_PX_H);
-    const zoom = fit >= 1 ? Math.floor(fit) : fit;
+    const fit = Math.min(stage.clientWidth / SCREEN_W, stage.clientHeight / SCREEN_H);
+    const artPx = Math.max(1, Math.floor(fit * SCALE));
+    const zoom = fit * SCALE >= 1 ? artPx / SCALE : fit;
     const c = game.canvas;
-    c.style.width = `${Math.floor(ROOM_PX_W * zoom)}px`;
-    c.style.height = `${Math.floor(ROOM_PX_H * zoom)}px`;
+    c.style.width = `${Math.floor(SCREEN_W * zoom)}px`;
+    c.style.height = `${Math.floor(SCREEN_H * zoom)}px`;
     game.scale.updateBounds();
   };
   new ResizeObserver(resize).observe(stage);
@@ -116,16 +117,16 @@ function start(data: unknown) {
   const game = new Phaser.Game({
     type: Phaser.WEBGL,
     parent: "stage",
-    width: ROOM_PX_W,
-    height: ROOM_PX_H,
+    width: SCREEN_W,
+    height: SCREEN_H,
     pixelArt: true,
     roundPixels: true,
     backgroundColor: "#05070c",
     scale: { mode: Phaser.Scale.NONE },
     input: { gamepad: true },
-    render: { maxLights: 16 },
+    render: { maxLights: 24 },
     banner: false,
-    scene,
+    scene: [scene, new HudScene(scene)],
   });
 
   game.events.once(Phaser.Core.Events.READY, () => fitCanvas(game));

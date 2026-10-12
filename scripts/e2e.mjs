@@ -25,15 +25,21 @@ mkdirSync(OUT, { recursive: true });
 
 const TYPES = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css" };
 const server = createServer((req, res) => {
-  const path = join(DIST, req.url === "/" ? "index.html" : req.url.split("?")[0]);
+  const pathname = req.url.split("?")[0];
+  const path = join(DIST, pathname === "/" ? "index.html" : pathname);
+  let body;
   try {
-    res.writeHead(200, { "content-type": TYPES[extname(path)] ?? "application/octet-stream" });
-    res.end(readFileSync(path));
+    body = readFileSync(path);
   } catch {
     res.writeHead(404).end();
+    return;
   }
+  res.writeHead(200, { "content-type": TYPES[extname(path)] ?? "application/octet-stream" });
+  res.end(body);
 }).listen(0);
-const url = `http://localhost:${server.address().port}/`;
+const base = `http://localhost:${server.address().port}/`;
+// 操作测试用低分辨率跑（没有 GPU 时快很多），截图单独用正常分辨率
+const url = `${base}?scale=1`;
 
 const { chromium } = await loadPlaywright();
 const browser = await chromium.launch({ args: ["--use-gl=angle", "--use-angle=swiftshader", "--enable-unsafe-swiftshader"] });
@@ -44,7 +50,9 @@ page.on("console", (m) => m.type() === "error" && errors.push(m.text()));
 
 await page.goto(url);
 await page.waitForFunction(() => window.__fw?.scene()?.player);
-await page.waitForTimeout(500);
+// 软件渲染（没有 GPU）时前一两秒在编译着色器，很卡，等帧率稳定了再开始
+await page.waitForTimeout(1500);
+await page.waitForFunction(() => window.__fw.scene().game.loop.actualFps > 20, null, { timeout: 20000 }).catch(() => {});
 
 const state = () => page.evaluate(() => window.__fw.state());
 const shot = async (name) => {
@@ -56,8 +64,6 @@ const hold = async (keys, ms) => {
   await page.waitForTimeout(ms);
   for (const k of keys) await page.keyboard.up(k);
 };
-const teleport = (tx, ty) =>
-  page.evaluate(([x, y]) => window.__fw.scene().teleport(x * 8 + 1, y * 8 + 1), [tx, ty]);
 
 let failed = false;
 const check = (ok, msg) => {
@@ -94,16 +100,6 @@ await page.keyboard.up("ArrowRight");
 const s3 = await state();
 check(s3.room.rx === 1 && s3.room.ry === 1, `往右走进入房间 B（当前 ${JSON.stringify(s3.room)}）`);
 await shot("03-room-b");
-
-// 5. 各个房间的样子（直接传送过去截图）
-await teleport(40 + 30, 22 + 17);
-await page.waitForTimeout(400);
-await teleport(40 + 30, 10);
-await page.waitForTimeout(500);
-await shot("04-room-d");
-await teleport(20, 18);
-await page.waitForTimeout(500);
-await shot("05-room-c");
 
 check(errors.length === 0, `没有页面报错${errors.length ? "：" + errors.join(" | ") : ""}`);
 
